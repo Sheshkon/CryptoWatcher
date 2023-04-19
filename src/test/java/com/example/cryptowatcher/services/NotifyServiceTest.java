@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import com.example.cryptowatcher.exceptions.CoinNotAvailableException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,7 +18,9 @@ import org.mockito.MockitoAnnotations;
 import com.example.cryptowatcher.models.ActualCoin;
 import com.example.cryptowatcher.models.User;
 import com.example.cryptowatcher.models.UserCoin;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles("test")
 public class NotifyServiceTest {
 
     @Mock
@@ -38,7 +41,7 @@ public class NotifyServiceTest {
     }
 
     @Test
-    public void testRegisterUserCoinCreated() throws Exception {
+    public void testRegisterUserCoinCreated() throws CoinNotAvailableException {
         // arrange
         String username = "john";
         String symbol = "BTC";
@@ -63,7 +66,7 @@ public class NotifyServiceTest {
     }
 
     @Test
-    public void testRegisterUserCoinUpdated() throws Exception {
+    public void testRegisterUserCoinUpdated() throws CoinNotAvailableException {
         // arrange
         String username = "john";
         String symbol = "BTC";
@@ -93,7 +96,7 @@ public class NotifyServiceTest {
     }
 
     @Test
-    void testRegisterCoinNotAvailable() throws Exception {
+    void testRegisterCoinNotAvailable() throws CoinNotAvailableException {
         String username = "testUser";
         String symbol = "notAvailableCoin";
         User user = new User();
@@ -103,9 +106,7 @@ public class NotifyServiceTest {
         Mockito.when(userService.getUserByUsername(username)).thenReturn(java.util.Optional.of(user));
         Mockito.when(actualCoinService.getBySymbol(symbol)).thenReturn(java.util.Optional.empty());
 
-        Exception exception = assertThrows(Exception.class, () -> {
-            notifyService.register(username, symbol);
-        });
+        Exception exception = assertThrows(Exception.class, () -> notifyService.register(username, symbol));
 
         String expectedMessage = "Coin with symbol " + symbol + " is not available.";
         String actualMessage = exception.getMessage();
