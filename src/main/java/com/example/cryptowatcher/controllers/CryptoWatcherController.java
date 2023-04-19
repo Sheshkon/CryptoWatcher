@@ -1,6 +1,7 @@
 package com.example.cryptowatcher.controllers;
 
 
+import com.example.cryptowatcher.exceptions.CoinNotAvailableException;
 import com.example.cryptowatcher.models.ActualCoin;
 import com.example.cryptowatcher.models.UserCoin;
 import com.example.cryptowatcher.services.ActualCoinService;
@@ -32,7 +33,7 @@ public class CryptoWatcherController {
     }
 
     @PostMapping("/notify")
-    public ResponseEntity<String> notify(@RequestParam("username") String username, @RequestParam("symbol") String symbol) throws Exception {
+    public ResponseEntity<String> notify(@RequestParam("username") String username, @RequestParam("symbol") String symbol) throws CoinNotAvailableException {
         String msg = notifyService.register(username, symbol);
         return ResponseEntity.ok(msg);
     }
@@ -55,8 +56,13 @@ public class CryptoWatcherController {
         return new ResponseEntity<>(coins, HttpStatus.OK);
     }
 
+    @ExceptionHandler(CoinNotAvailableException.class)
+    public ResponseEntity<String> handleCoinNotAvailableException(CoinNotAvailableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("An error occurred: " + ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleRuntimeException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    public ResponseEntity<String> handleUnexpectedException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + ex.getMessage());
     }
 }
