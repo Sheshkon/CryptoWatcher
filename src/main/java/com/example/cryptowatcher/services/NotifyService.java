@@ -1,5 +1,6 @@
 package com.example.cryptowatcher.services;
 
+import com.example.cryptowatcher.exceptions.CoinNotAvailableException;
 import com.example.cryptowatcher.models.ActualCoin;
 import com.example.cryptowatcher.models.User;
 import com.example.cryptowatcher.models.UserCoin;
@@ -23,33 +24,22 @@ public class NotifyService {
     private final UserService userService;
 
 
-    public String register(String username, String symbol) throws Exception {
+    public String register(String username, String symbol) throws CoinNotAvailableException {
         Optional<User> userOptional = userService.getUserByUsername(username);
-        User user;
-
-        if (userOptional.isPresent()) {
-            user = userOptional.get();
-        } else {
-            user = userService.createUser(username);
-        }
+        User user = userOptional.orElseGet(() -> userService.createUser(username));
 
         Optional<ActualCoin> actualCoinOptional = actualCoinService.getBySymbol(symbol);
 
-        if (actualCoinOptional.isEmpty()) {
-            throw new Exception("Coin with symbol " + symbol + " is not available.");
-        }
-
-        ActualCoin actualCoin = actualCoinOptional.get();
+        ActualCoin actualCoin = actualCoinOptional.orElseThrow(() -> new CoinNotAvailableException(symbol));
 
         Optional<UserCoin> userCoinOptional = userCoinService.getByUserUsernameAndSymbol(username, symbol);
-        UserCoin userCoin;
 
-        if (userCoinOptional.isPresent()) {
-            userCoin = userCoinOptional.get();
-        } else {
+        if (userCoinOptional.isEmpty()) {
             userCoinService.createUserCoin(user, actualCoin.getId(), symbol, actualCoin.getPrice());
             return "User coin created";
         }
+
+        UserCoin userCoin = userCoinOptional.get();
         userCoin.setPrice(actualCoin.getPrice());
         userCoinService.updateUserCoin(userCoin);
 
